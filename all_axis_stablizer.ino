@@ -4,15 +4,13 @@
 #include <SD.h>
 #include <protothreads.h>
 
-// select the input pins for the batteries
-#define battPin0 A11    
-#define battPin1 A14
-#define battPin2 A12
+#define battPin0 A11 ///< Select the input pins for the batteries
+#define battPin1 A14 ///< Select the input pins for the batteries
+#define battPin2 A12 ///< Select the input pins for the batteries
 
-Servo servo;
-Servo servo2;
-Servo servo3;
-
+Servo servo;  ///<Instanciate First Servo Motor
+Servo servo2; ///<Instanciate Second Servo Motor
+Servo servo3; ///<Instanciate Third Servo Motor
 
 int servo_pin = A2;
 int servo_pin2 = A3;
@@ -21,45 +19,53 @@ int sd_cs_pin = 53;
 int light_pin = A6;
 unsigned long t = 0;
 
-
-//Control surfaces phisical limits
-int p_airelon_max = 150; // Airelon
-int p_airelon_min = 30; // Airelon
-int p_flap_r_max = 100; // Flap
-int p_flap_r_min = 0; // Flap
-int p_flap_l_max = 80; // Flap
-int p_flap_l_min = 180; // Flap
-int p_rudder_max = 180; // Rudder
-int p_rudder_min = 0; // Rudder
-int p_elevator_max = 120; // Elevator
-int p_elevator_min = 30; // Elevator
+int p_airelon_max = 150; ///< Control surfaces phisical limits: Airelon
+int p_airelon_min = 30; ///< Control surfaces phisical limits: Airelon
+int p_flap_r_max = 100; ///< Control surfaces phisical limits: Flap Right Maximum 
+int p_flap_r_min = 0; ///< Control surfaces phisical limits: Flap Right Minimum
+int p_flap_l_max = 80; ///< Control surfaces phisical limits: Flap Left Maximum
+int p_flap_l_min = 180; ///< Control surfaces phisical limits: Flap Left Minimum 
+int p_rudder_max = 180; ///< Control surfaces phisical limits: Rudder Maximum
+int p_rudder_min = 0; ///< Control surfaces phisical limits: Rudder Minimum
+int p_elevator_max = 120; ///< Control surfaces phisical limits: Elevator Maximum
+int p_elevator_min = 30; ///< Control surfaces phisical limits: Elevator Minimum
 
 File file;
 
-// Start MPU variables
-const int MPU_addr = 0x68;
-int16_t AcX,AcY,AcZ,Tmp,GyX,GyY,GyZ;
-int Yangle,Xangle,Zangle;
-// End MPU variables
+const int MPU_addr = 0x68; ///< MPU variables
+int16_t AcX,AcY,AcZ,Tmp,GyX,GyY,GyZ; ///< MPU variables
+int Yangle,Xangle,Zangle; ///< MPU variables
 
-// Start battery variables
-float battWeighting = 0.1; // define a weighting to apply to our exponential moving average calculation for battery 
 
-int abattValue0 = 0; // variable to store average value (exponential moving average) calculation
-int abattValue1 = 0;
-int abattValue2 = 0;
+float battWeighting = 0.1; ///< battery variables, define a weighting to apply to our exponential moving average calculation for battery 
 
-float Cell1 = 0.00; // variable to store actual cell voltages
-float Cell2 = 0.00;
-float Cell3 = 0.00;
+
+int abattValue0 = 0; ///< battery variables, variable to store average value (exponential moving average) calculation
+int abattValue1 = 0; ///< battery variables, variable to store average value (exponential moving average) calculation
+int abattValue2 = 0; ///< battery variables, variable to store average value (exponential moving average) calculation
+
+
+float Cell1 = 0.00; ///< variable to store actual cell voltages
+float Cell2 = 0.00; ///< variable to store actual cell voltages
+float Cell3 = 0.00; ///< variable to store actual cell voltages
 
 float percentage;
-float adcVolt = 0.0041780351906158 ; // one point on the ADC equals this many volts
-// End battery variables
+float adcVolt = 0.0041780351906158 ; ///< one point on the ADC equals this many volts
+
+
 
 // Protothread
-pt ptReadWrite;
-int readWriteThread(struct pt* pt) {
+
+pt ptReadWrite; 
+
+/*! \brief Brief description function below.
+ *
+ *  Detailed description starts here.
+ *
+ *  \param pt ponteiro
+ *  \retval int x
+ */
+ int readWriteThread(struct pt* pt) {
   PT_BEGIN(pt);
   //PT_SLEEP(pt, 200);
   //PT_YIELD(pt);
@@ -75,6 +81,13 @@ PT_END(pt);
 }
 
 pt ptDatalogger;
+/*! \brief Brief description function below.
+ *
+ *  Detailed description starts here.
+ *
+ *  \param pt ponteiro
+ *  \retval int x
+ */
 int dataloggerThread(struct pt* pt) {
   PT_BEGIN(pt);
 
@@ -89,6 +102,13 @@ int dataloggerThread(struct pt* pt) {
 }
 
 pt ptLight;
+/*! \brief Brief description function below.
+ *
+ *  Detailed description starts here.
+ *
+ *  \param pt ponteiro
+ *  \retval int x
+ */
 int lightThread(struct pt* pt) {
   PT_BEGIN(pt);
 
@@ -101,7 +121,13 @@ int lightThread(struct pt* pt) {
   PT_END(pt);
 }
 
-
+/*! \brief Brief description function below.
+ *
+ *  Detailed description starts here.
+ *
+ *  \param pt ponteiro
+ *  \retval int x
+ */
 float getBattVolts() {
   // read the value from the sensor:
   abattValue0 = (analogRead(battPin0) * battWeighting) + (abattValue0 * (1-battWeighting));
@@ -116,6 +142,13 @@ float getBattVolts() {
   return Cell1+Cell2+Cell3;
 }
 
+/*! \brief Brief description function below.
+ *
+ *  Detailed description starts here.
+ *
+ *  \param pt ponteiro
+ *  \retval int x
+ */
 void showBattVolts() {
   Serial.print (Cell1);
   Serial.print ("V. " );
@@ -129,6 +162,13 @@ void showBattVolts() {
   Serial.println("%");
 }
 
+/*! \brief Brief description function below.
+ *
+ *  Detailed description starts here.
+ *
+ *  \param pt ponteiro
+ *  \retval int x
+ */
 float get_percentage(float volt){
     float low  = 3.0 * 3;
     float high = 4.2 * 3;
@@ -136,6 +176,13 @@ float get_percentage(float volt){
     return percentage*100;
 }
 
+/*! \brief Brief description function below.
+ *
+ *  Detailed description starts here.
+ *
+ *  \param pt ponteiro
+ *  \retval int x
+ */
 void get_GyroData(){
   Wire.beginTransmission(MPU_addr);
   Wire.write(0x3B);
@@ -155,10 +202,24 @@ void get_GyroData(){
   Zangle = GyZ/182.04;
 }
 
+/*! \brief Brief description function below.
+ *
+ *  Detailed description starts here.
+ *
+ *  \param pt ponteiro
+ *  \retval int x
+ */
 void update_time(){
   t++;
 }
 
+/*! \brief Brief description function below.
+ *
+ *  Detailed description starts here.
+ *
+ *  \param pt ponteiro
+ *  \retval int x
+ */
 String generate_logData(){
   String dataString ="";
   dataString += String(t);
@@ -181,6 +242,13 @@ String generate_logData(){
   return dataString;
 }
 
+/*! \brief Brief description function below.
+ *
+ *  Detailed description starts here.
+ *
+ *  \param pt ponteiro
+ *  \retval int x
+ */
 void write_log(String data){
   file = SD.open("log.txt", FILE_WRITE);
   // if the file opened okay, write to it:
@@ -190,12 +258,26 @@ void write_log(String data){
   }
 }
 
+/*! \brief Brief description function below.
+ *
+ *  Detailed description starts here.
+ *
+ *  \param pt ponteiro
+ *  \retval int x
+ */
 void update_Servo_position(){
   servo.write(constrain(Zangle+90,p_rudder_min,p_rudder_max));
   servo3.write(constrain(-Yangle + 90,p_airelon_min,p_airelon_max));
   servo2.write(constrain(Xangle + 90,p_elevator_min,p_elevator_max));
 }
 
+/*! \brief Brief description function below.
+ *
+ *  Detailed description starts here.
+ *
+ *  \param pt ponteiro
+ *  \retval int x
+ */
 void light_mode(int mode){
   switch(mode){
     case 0:
@@ -210,6 +292,13 @@ void light_mode(int mode){
   }
 }
 
+/*! \brief Brief description function below.
+ *
+ *  Detailed description starts here.
+ *
+ *  \param pt ponteiro
+ *  \retval int x
+ */
 void mpu_setup(){
   Wire.begin();
   Wire.beginTransmission(MPU_addr);
@@ -218,19 +307,39 @@ void mpu_setup(){
   Wire.endTransmission(true);
 }
 
+/*! \brief Brief description function below.
+ *
+ *  Detailed description starts here.
+ *
+ *  \param pt ponteiro
+ *  \retval int x
+ */
 void servos_attach(){
   servo.attach(servo_pin);
   servo2.attach(servo_pin2);
   servo3.attach(servo_pin3);
 }
 
+/*! \brief Brief description function below.
+ *
+ *  Detailed description starts here.
+ *
+ *  \param pt ponteiro
+ *  \retval int x
+ */
 void get_baterry_average(int times){
   for (int i=0; i<times; i++){
       getBattVolts();
     }
 }
 
-
+/*! \brief Brief description function below.
+ *
+ *  Detailed description starts here.
+ *
+ *  \param pt ponteiro
+ *  \retval int x
+ */
 void setup() {
   pinMode(light_pin,OUTPUT);
   
@@ -248,7 +357,13 @@ void setup() {
 }
 
 
-
+/*! \brief Brief description function below.
+ *
+ *  Detailed description starts here.
+ *
+ *  \param pt ponteiro
+ *  \retval int x
+ */
 void loop() {
 
   PT_SCHEDULE(readWriteThread(&ptReadWrite));
