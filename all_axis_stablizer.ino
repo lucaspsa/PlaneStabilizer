@@ -12,45 +12,55 @@ Servo servo;  ///<Instanciate First Servo Motor
 Servo servo2; ///<Instanciate Second Servo Motor
 Servo servo3; ///<Instanciate Third Servo Motor
 
-int servo_pin = A2;
-int servo_pin2 = A3;
-int servo_pin3 = A1;
-int sd_cs_pin = 53;
-int light_pin = A6;
-unsigned long t = 0;
+int servo_pin = A2; ///<Pin where Servo is connected to Arduino
+int servo_pin2 = A3; ///<Pin where Servo is connected to Arduino
+int servo_pin3 = A1; ///<Pin where Servo is connected to Arduino
+int sd_cs_pin = 53; ///< Pin where cs pin is connected to Arduino
+int light_pin = A6; ///< Pin to activate LED
+unsigned long t = 0; ///< Count time for datalogger
 
-int p_airelon_max = 150; ///< Control surfaces phisical limits: Airelon
-int p_airelon_min = 30; ///< Control surfaces phisical limits: Airelon
-int p_flap_r_max = 100; ///< Control surfaces phisical limits: Flap Right Maximum 
-int p_flap_r_min = 0; ///< Control surfaces phisical limits: Flap Right Minimum
-int p_flap_l_max = 80; ///< Control surfaces phisical limits: Flap Left Maximum
-int p_flap_l_min = 180; ///< Control surfaces phisical limits: Flap Left Minimum 
-int p_rudder_max = 180; ///< Control surfaces phisical limits: Rudder Maximum
-int p_rudder_min = 0; ///< Control surfaces phisical limits: Rudder Minimum
-int p_elevator_max = 120; ///< Control surfaces phisical limits: Elevator Maximum
-int p_elevator_min = 30; ///< Control surfaces phisical limits: Elevator Minimum
+int p_airelon_max = 150; ///< Maximum value for airelon physical limits. 
+int p_airelon_min = 30; ///< Minimum value for airelon physical limits.
+int p_flap_r_max = 100; ///< Maximum Value for right flap physical limits.
+int p_flap_r_min = 0; ///< Minimum value for right flap physical limits.
+int p_flap_l_max = 80; ///< Maximum value for left flap physical limits.
+int p_flap_l_min = 180; ///< Minimum value for left flap physical limits.
+int p_rudder_max = 180; ///< Maximum value for rudder physical limits.
+int p_rudder_min = 0; ///< Minimum value for rudder physical limits.
+int p_elevator_max = 120; ///< Maximum value for elevator physical limits.
+int p_elevator_min = 30; ///< Minimum value for elevator physical limits.
 
-File file;
+File file; ///< Object to write on memory
 
-const int MPU_addr = 0x68; ///< MPU variables
-int16_t AcX,AcY,AcZ,Tmp,GyX,GyY,GyZ; ///< MPU variables
-int Yangle,Xangle,Zangle; ///< MPU variables
+const int MPU_addr = 0x68; ///< Address of MPU6050 for communications
+int16_t AcX; ///< Variable to store X axis acelerometer data from IMU.
+int16_t AcY; ///< Variable to store Y axis acelerometer data from IMU.
+int16_t AcZ; ///< Variable to store Z axis acelerometer data from IMU.
+int16_t Tmp; ///< Variable for temperature.
+int16_t GyX; ///< Variable to store X axis giroscope data from IMU.
+int16_t GyY; ///< Variable to store Y axis giroscope data from IMU.
+int16_t GyZ; ///< Variable to store Z axis giroscope data from IMU.
+
+int Yangle; ///< Aux variable to convert IMU data into degrees
+int Xangle; ///< Aux variable to convert IMU data into degrees
+int Zangle; ///< Aux variable to convert IMU data into degrees  
 
 
-float battWeighting = 0.1; ///< battery variables, define a weighting to apply to our exponential moving average calculation for battery 
+float battWeighting = 0.1; ///< Battery variable which define a weighting to apply to our exponential moving average calculation for battery. 
 
 
-int abattValue0 = 0; ///< battery variables, variable to store average value (exponential moving average) calculation
-int abattValue1 = 0; ///< battery variables, variable to store average value (exponential moving average) calculation
-int abattValue2 = 0; ///< battery variables, variable to store average value (exponential moving average) calculation
+int abattValue0 = 0; ///< battery variables, variable to store average value (exponential moving average) calculation.
+int abattValue1 = 0; ///< battery variables, variable to store average value (exponential moving average) calculation.
+int abattValue2 = 0; ///< battery variables, variable to store average value (exponential moving average) calculation.
 
 
-float Cell1 = 0.00; ///< variable to store actual cell voltages
-float Cell2 = 0.00; ///< variable to store actual cell voltages
-float Cell3 = 0.00; ///< variable to store actual cell voltages
+float Cell1 = 0.00; ///< variable to store actual cell voltages.
+float Cell2 = 0.00; ///< variable to store actual cell voltages.
+float Cell3 = 0.00; ///< variable to store actual cell voltages.
 
-float percentage;
-float adcVolt = 0.0041780351906158 ; ///< one point on the ADC equals this many volts
+float percentage; ///< Percentage of remaining battery life.
+
+float adcVolt = 0.0041780351906158 ; ///< ADC constant for read voltage purposes.
 
 
 
@@ -58,12 +68,11 @@ float adcVolt = 0.0041780351906158 ; ///< one point on the ADC equals this many 
 
 pt ptReadWrite; 
 
-/*! \brief Brief description function below.
+/*! \brief Read sensor data and update servo position
  *
- *  Detailed description starts here.
+ *  Using a thread object as paramater reads sensor data and update servo position
  *
- *  \param pt ponteiro
- *  \retval int x
+ *  \param pt* pt
  */
  int readWriteThread(struct pt* pt) {
   PT_BEGIN(pt);
@@ -81,13 +90,13 @@ PT_END(pt);
 }
 
 pt ptDatalogger;
-/*! \brief Brief description function below.
+
+/*! \brief Get sensor data to write on file
  *
- *  Detailed description starts here.
+ *  This function uses thread to get sensor data and write on text file into SD card
  *
- *  \param pt ponteiro
- *  \retval int x
- */
+ *  \param pt* pt 
+ */ 
 int dataloggerThread(struct pt* pt) {
   PT_BEGIN(pt);
 
@@ -102,12 +111,12 @@ int dataloggerThread(struct pt* pt) {
 }
 
 pt ptLight;
-/*! \brief Brief description function below.
+
+/*! \brief Turns on LED
  *
- *  Detailed description starts here.
+ *  This function uses thread to turn on LED
  *
- *  \param pt ponteiro
- *  \retval int x
+ *  \param pt* pt
  */
 int lightThread(struct pt* pt) {
   PT_BEGIN(pt);
@@ -121,12 +130,12 @@ int lightThread(struct pt* pt) {
   PT_END(pt);
 }
 
-/*! \brief Brief description function below.
+/*! \brief Read battery voltage.
  *
- *  Detailed description starts here.
- *
- *  \param pt ponteiro
- *  \retval int x
+ *  This function read analog battery values then convert real voltage values
+ *  and return the sum of all battery cell values.
+ * 
+ *  \retval float Cell1+Cell2+Cell3 
  */
 float getBattVolts() {
   // read the value from the sensor:
@@ -142,12 +151,10 @@ float getBattVolts() {
   return Cell1+Cell2+Cell3;
 }
 
-/*! \brief Brief description function below.
+/*! \brief Print battery life.
  *
- *  Detailed description starts here.
- *
- *  \param pt ponteiro
- *  \retval int x
+ *  This function is used to print the battery life in percentage for debug.
+ * 
  */
 void showBattVolts() {
   Serial.print (Cell1);
@@ -162,12 +169,13 @@ void showBattVolts() {
   Serial.println("%");
 }
 
-/*! \brief Brief description function below.
+/*! \brief Get battery life in percentage
  *
- *  Detailed description starts here.
+ *  This function gets battery life raw and return to as percentage.
+ *  Low and High values are from battery datasheet.
  *
- *  \param pt ponteiro
- *  \retval int x
+ *  \param float volt
+ *  \retval float percentage*100
  */
 float get_percentage(float volt){
     float low  = 3.0 * 3;
@@ -176,12 +184,14 @@ float get_percentage(float volt){
     return percentage*100;
 }
 
-/*! \brief Brief description function below.
+/*! \brief Get gyro sensors data
  *
- *  Detailed description starts here.
- *
- *  \param pt ponteiro
- *  \retval int x
+ *  Iniciates communications with IMU sensor
+ *  then read the feedback values to updates in global variables
+ *  and convert values to degrees. Wire.read() returns an int
+ *  then is shifted 8 bits to the left which is equivalent to
+ *  multiplying by 256 then bitwise OR. Turns two 8-bit values into one 16-bit value.
+ *  
  */
 void get_GyroData(){
   Wire.beginTransmission(MPU_addr);
@@ -197,28 +207,25 @@ void get_GyroData(){
   GyY=Wire.read()<<8|Wire.read();  // 0x45 (GYRO_YOUT_H) & 0x46 (GYRO_YOUT_L)
   GyZ=Wire.read()<<8|Wire.read();  // 0x47 (GYRO_ZOUT_H) & 0x48 (GYRO_ZOUT_L)
   
-  Yangle = AcY/182.04;
+  Yangle = AcY/182.04; 
   Xangle = AcX/182.04;
   Zangle = GyZ/182.04;
 }
 
-/*! \brief Brief description function below.
+/*! \brief Update time for datalogger
  *
- *  Detailed description starts here.
- *
- *  \param pt ponteiro
- *  \retval int x
+ *  Updates time so datalonger knows the instant it saved the value.
+ * 
  */
 void update_time(){
   t++;
 }
 
-/*! \brief Brief description function below.
+/*! \brief Get values and convert to string
  *
- *  Detailed description starts here.
- *
- *  \param pt ponteiro
- *  \retval int x
+ *  This auxiliary function gets general data and converts to string to use in text file later.
+ * 
+ *  \retval String dataString
  */
 String generate_logData(){
   String dataString ="";
@@ -242,12 +249,10 @@ String generate_logData(){
   return dataString;
 }
 
-/*! \brief Brief description function below.
+/*! \brief Write data in text file.
  *
- *  Detailed description starts here.
+ *  Open text file and write each line from generate_logData into it.
  *
- *  \param pt ponteiro
- *  \retval int x
  */
 void write_log(String data){
   file = SD.open("log.txt", FILE_WRITE);
@@ -258,12 +263,10 @@ void write_log(String data){
   }
 }
 
-/*! \brief Brief description function below.
+/*! \brief Update servo angle position
  *
- *  Detailed description starts here.
+ *  This function write on each servo motor to stabilize the control surfaces.
  *
- *  \param pt ponteiro
- *  \retval int x
  */
 void update_Servo_position(){
   servo.write(constrain(Zangle+90,p_rudder_min,p_rudder_max));
@@ -271,12 +274,10 @@ void update_Servo_position(){
   servo2.write(constrain(Xangle + 90,p_elevator_min,p_elevator_max));
 }
 
-/*! \brief Brief description function below.
+/*! \brief Configs the LED.
  *
- *  Detailed description starts here.
+ *  This function is used to config the arduino LED.
  *
- *  \param pt ponteiro
- *  \retval int x
  */
 void light_mode(int mode){
   switch(mode){
@@ -292,12 +293,10 @@ void light_mode(int mode){
   }
 }
 
-/*! \brief Brief description function below.
+/*! \brief Configs IMU sensor.
  *
- *  Detailed description starts here.
- *
- *  \param pt ponteiro
- *  \retval int x
+ *  This function configs the IMU(Inertial Measure Unity) sensor parameters.
+ *  In this case the IMU used is MPU6050.
  */
 void mpu_setup(){
   Wire.begin();
@@ -307,12 +306,10 @@ void mpu_setup(){
   Wire.endTransmission(true);
 }
 
-/*! \brief Brief description function below.
+/*! \brief Initializates Servo.
  *
- *  Detailed description starts here.
+ *  This functions initializates each servo motors to the desired pins.
  *
- *  \param pt ponteiro
- *  \retval int x
  */
 void servos_attach(){
   servo.attach(servo_pin);
@@ -320,12 +317,10 @@ void servos_attach(){
   servo3.attach(servo_pin3);
 }
 
-/*! \brief Brief description function below.
+/*! \brief Gets a mean of battery life
  *
- *  Detailed description starts here.
+ *  This function returns an avarage on battery voltage. 
  *
- *  \param pt ponteiro
- *  \retval int x
  */
 void get_baterry_average(int times){
   for (int i=0; i<times; i++){
@@ -333,23 +328,17 @@ void get_baterry_average(int times){
     }
 }
 
-/*! \brief Brief description function below.
+/*! \brief Arduino setup function
  *
- *  Detailed description starts here.
+ *  This function start up and config the system.
  *
- *  \param pt ponteiro
- *  \retval int x
  */
 void setup() {
-  pinMode(light_pin,OUTPUT);
-  
-  Serial.begin(115200);
-  
-  mpu_setup();
-  
+  pinMode(light_pin,OUTPUT);  
+  Serial.begin(115200);  
+  mpu_setup();  
   //Starting SD
   SD.begin(sd_cs_pin);
-
   servos_attach();
   get_baterry_average(50);
   PT_INIT(&ptReadWrite);
@@ -357,12 +346,10 @@ void setup() {
 }
 
 
-/*! \brief Brief description function below.
+/*! \brief Arduino infinite loop.
  *
- *  Detailed description starts here.
+ *  This function is the main execution loop..
  *
- *  \param pt ponteiro
- *  \retval int x
  */
 void loop() {
 
